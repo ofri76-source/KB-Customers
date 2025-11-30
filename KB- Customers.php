@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DC Customers Manager
  * Description: ניהול רשימת לקוחות מרכזית לכל התוספים + ייבוא/ייצוא מאקסל (CSV).
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: Ofri
  */
 
@@ -26,6 +26,7 @@ class DC_Customers_Manager {
 
         register_activation_hook( __FILE__, array( $this, 'activate' ) );
         add_shortcode( 'dc_customers_manager', array( $this, 'render_shortcode' ) );
+        add_shortcode( 'dc_customers_trash', array( $this, 'render_trash_shortcode' ) );
 
         add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
         add_action( 'init', array( $this, 'handle_post_requests' ) );
@@ -63,7 +64,7 @@ class DC_Customers_Manager {
             'dc-customers-css',
             plugins_url( 'assets/customers.css', __FILE__ ),
             array(),
-            '1.1.0'
+            '1.2.0'
         );
         wp_enqueue_style( 'dc-customers-css' );
 
@@ -72,7 +73,7 @@ class DC_Customers_Manager {
             'dc-customers-js',
             plugins_url( 'assets/customers.js', __FILE__ ),
             array( 'jquery' ),
-            '1.1.0',
+            '1.2.0',
             true
         );
         wp_enqueue_script( 'dc-customers-js' );
@@ -453,22 +454,63 @@ class DC_Customers_Manager {
     }
 
     /**
-     * שורטקוד – הממשק המלא
+     * שורטקוד – ניהול לקוחות
      */
     public function render_shortcode( $atts ) {
+        return $this->render_layout( 'customers' );
+    }
+
+    /**
+     * שורטקוד – סל מחזור
+     */
+    public function render_trash_shortcode( $atts ) {
+        return $this->render_layout( 'trash' );
+    }
+
+    /**
+     * שרטוט הממשק לפי תצוגה
+     */
+    private function render_layout( $view = 'customers' ) {
+        $view_request = isset( $_GET['dc_c_view'] ) ? sanitize_key( $_GET['dc_c_view'] ) : $view;
+        $view         = in_array( $view_request, array( 'customers', 'trash' ), true ) ? $view_request : 'customers';
+
         $search  = isset( $_GET['dc_c_search'] ) ? sanitize_text_field( $_GET['dc_c_search'] ) : '';
         $orderby = isset( $_GET['dc_c_orderby'] ) ? sanitize_key( $_GET['dc_c_orderby'] ) : 'customer_name';
         $order   = isset( $_GET['dc_c_order'] ) ? sanitize_key( $_GET['dc_c_order'] )   : 'ASC';
 
-        $customers         = $this->get_customers( false, $search, $orderby, $order );
+        $customers         = $view === 'customers' ? $this->get_customers( false, $search, $orderby, $order ) : array();
         $deleted_customers = $this->get_customers( true,  $search, $orderby, $order );
 
         $errors = get_transient( 'dc_customers_errors' );
         delete_transient( 'dc_customers_errors' );
 
+        $base_url    = remove_query_arg( array( 'dc_c_view', 'dc_c_orderby', 'dc_c_order' ) );
+        $manager_url = add_query_arg( 'dc_c_view', 'customers', $base_url );
+        $trash_url   = add_query_arg( 'dc_c_view', 'trash', $base_url );
+
         ob_start();
         ?>
         <div class="dc-customers-wrap">
+            <div class="dc-nav-buttons">
+                <a class="dc-nav-button <?php echo $view === 'customers' ? 'is-active' : ''; ?>" href="<?php echo esc_url( $manager_url ); ?>">
+                    <span class="dc-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    </span>
+                    ניהול לקוחות
+                </a>
+                <a class="dc-nav-button" href="<?php echo esc_url( $manager_url . '#bulk-actions' ); ?>">
+                    <span class="dc-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 7h14M5 12h10M5 17h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    </span>
+                    עריכה קבוצתית
+                </a>
+                <a class="dc-nav-button <?php echo $view === 'trash' ? 'is-active' : ''; ?>" href="<?php echo esc_url( $trash_url ); ?>">
+                    <span class="dc-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9 6h6m-7 3h8l-.7 9.1a2 2 0 0 1-2 1.9H10a2 2 0 0 1-2-1.9L7.3 9M10 11v6m4-6v6M5 6h14M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                    סל מחזור
+                </a>
+            </div>
 
             <?php if ( ! empty( $errors ) ) : ?>
                 <div class="dc-errors">
@@ -478,191 +520,212 @@ class DC_Customers_Manager {
                 </div>
             <?php endif; ?>
 
-            <!-- חיפוש -->
             <form method="get" class="dc-search-form">
                 <input type="text"
                        name="dc_c_search"
                        value="<?php echo esc_attr( $search ); ?>"
                        placeholder="חיפוש לפי שם או מספר לקוח">
-                <button type="submit" class="dc-btn-primary">חיפוש</button>
+                <button type="submit" class="dc-btn-primary">
+                    <span class="dc-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15 15 4 4m-7-3a5 5 0 1 1 0-10 5 5 0 0 1 0 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                    חיפוש
+                </button>
             </form>
 
-            <!-- ייבוא / ייצוא -->
-            <div class="dc-import-export">
-                <!-- ייצוא CSV -->
-                <form method="post" style="display:inline-block; margin-inline-end:10px;">
+            <?php if ( $view === 'customers' ) : ?>
+                <h3>הוספת / עריכת לקוח</h3>
+                <form method="post" class="dc-form-modern dc-form-customer">
                     <?php wp_nonce_field( 'dc_customers_action' ); ?>
-                    <input type="hidden" name="dc_customers_action" value="export_csv">
-                    <button type="submit" class="dc-btn-secondary">
-                        ייצוא ל-Excel (CSV)
+                    <input type="hidden" name="dc_customers_action" value="add_or_update">
+                    <input type="hidden" name="id" value="">
+
+                    <div class="dc-field">
+                        <label>שם לקוח</label>
+                        <input type="text" name="customer_name" required>
+                    </div>
+                    <div class="dc-field">
+                        <label>מספר לקוח (2–6 ספרות)</label>
+                        <input type="text"
+                               name="customer_number"
+                               pattern="[0-9]{2,6}"
+                               required>
+                    </div>
+
+                    <button type="submit" class="dc-btn-primary">
+                        <span class="dc-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14M12 5v14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        </span>
+                        שמירה
                     </button>
                 </form>
 
-                <!-- יבוא CSV -->
-                <form method="post" enctype="multipart/form-data" style="display:inline-block;">
+                <h3>רשימת לקוחות</h3>
+                <form method="post">
                     <?php wp_nonce_field( 'dc_customers_action' ); ?>
-                    <input type="hidden" name="dc_customers_action" value="import_csv">
-                    <input type="file" name="customers_file" accept=".csv" required>
-                    <button type="submit" class="dc-btn-secondary">
-                        ייבוא מ-Excel (CSV)
-                    </button>
+                    <input type="hidden" name="dc_customers_action" value="soft_delete_bulk">
+
+                    <table class="dc-table-modern">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" class="dc-select-all"></th>
+                                <th>
+                                    <a href="?dc_c_orderby=customer_name&dc_c_order=<?php echo $order === 'ASC' ? 'DESC' : 'ASC'; ?>">
+                                        שם לקוח
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="?dc_c_orderby=customer_number&dc_c_order=<?php echo $order === 'ASC' ? 'DESC' : 'ASC'; ?>">
+                                        מספר לקוח
+                                    </a>
+                                </th>
+                                <th>פעולות</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if ( $customers ) : ?>
+                                <?php foreach ( $customers as $c ) : ?>
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" name="ids[]" value="<?php echo esc_attr( $c->id ); ?>">
+                                        </td>
+                                        <td><?php echo esc_html( $c->customer_name ); ?></td>
+                                        <td><?php echo esc_html( $c->customer_number ); ?></td>
+                                        <td>
+                                            <button type="button"
+                                                    class="dc-btn-secondary dc-edit-customer"
+                                                    data-id="<?php echo esc_attr( $c->id ); ?>"
+                                                    data-name="<?php echo esc_attr( $c->customer_name ); ?>"
+                                                    data-number="<?php echo esc_attr( $c->customer_number ); ?>">
+                                                <span class="dc-icon" aria-hidden="true">
+                                                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m5 17 4.5-.8 9-9a1 1 0 0 0-1.4-1.4l-9 9L5 17Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 6 18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                </span>
+                                                עריכה
+                                            </button>
+
+                                            <form method="post" style="display:inline;">
+                                                <?php wp_nonce_field( 'dc_customers_action' ); ?>
+                                                <input type="hidden" name="dc_customers_action" value="soft_delete">
+                                                <input type="hidden" name="id" value="<?php echo esc_attr( $c->id ); ?>">
+                                                <button type="submit" class="dc-btn-danger">
+                                                    <span class="dc-icon" aria-hidden="true">
+                                                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9 6h6m-7 3h8l-.7 9.1a2 2 0 0 1-2 1.9H10a2 2 0 0 1-2-1.9L7.3 9M10 11v6m4-6v6M5 6h14M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                    </span>
+                                                    מחיקה
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else : ?>
+                                <tr>
+                                    <td colspan="4">לא נמצאו לקוחות.</td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+
+                    <div id="bulk-actions">
+                        <button type="submit" class="dc-btn-danger">
+                            <span class="dc-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 6h14M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M9 11v6m4-6v6m-6-8h10l-.7 9.1a2 2 0 0 1-2 1.9H9.7a2 2 0 0 1-2-1.9L7 11Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            מחיקת רשומות מסומנות (לסל מחזור)
+                        </button>
+                    </div>
                 </form>
-            </div>
+            <?php endif; ?>
 
-            <!-- טופס הוספת/עריכת לקוח -->
-            <h3>הוספת / עריכת לקוח</h3>
-            <form method="post" class="dc-form-modern dc-form-customer">
-                <?php wp_nonce_field( 'dc_customers_action' ); ?>
-                <input type="hidden" name="dc_customers_action" value="add_or_update">
-                <input type="hidden" name="id" value="">
-
-                <div class="dc-field">
-                    <label>שם לקוח</label>
-                    <input type="text" name="customer_name" required>
-                </div>
-                <div class="dc-field">
-                    <label>מספר לקוח (2–6 ספרות)</label>
-                    <input type="text"
-                           name="customer_number"
-                           pattern="[0-9]{2,6}"
-                           required>
-                </div>
-
-                <button type="submit" class="dc-btn-primary">שמירה</button>
-            </form>
-
-            <!-- טבלת לקוחות -->
-            <h3>רשימת לקוחות</h3>
-            <form method="post">
-                <?php wp_nonce_field( 'dc_customers_action' ); ?>
-                <input type="hidden" name="dc_customers_action" value="soft_delete_bulk">
-
-                <table class="dc-table-modern">
+            <?php if ( $view === 'trash' ) : ?>
+                <h3>סל מחזור</h3>
+                <table class="dc-table-modern dc-trash-table">
                     <thead>
                         <tr>
-                            <th><input type="checkbox" class="dc-select-all"></th>
-                            <th>
-                                <a href="?dc_c_orderby=id&dc_c_order=<?php echo $order === 'ASC' ? 'DESC' : 'ASC'; ?>">
-                                    ID
-                                </a>
-                            </th>
-                            <th>
-                                <a href="?dc_c_orderby=customer_name&dc_c_order=<?php echo $order === 'ASC' ? 'DESC' : 'ASC'; ?>">
-                                    שם לקוח
-                                </a>
-                            </th>
-                            <th>
-                                <a href="?dc_c_orderby=customer_number&dc_c_order=<?php echo $order === 'ASC' ? 'DESC' : 'ASC'; ?>">
-                                    מספר לקוח
-                                </a>
-                            </th>
-                            <th>פעולות</th>
+                            <th>שם לקוח</th>
+                            <th>מספר לקוח</th>
+                            <th>נמחק בתאריך</th>
+                            <th>מחיקה לצמיתות</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if ( $customers ) : ?>
-                            <?php foreach ( $customers as $c ) : ?>
+                        <?php
+                        $has_deleted = false;
+                        if ( $deleted_customers ) :
+                            foreach ( $deleted_customers as $c ) :
+                                if ( ! $c->is_deleted ) {
+                                    continue;
+                                }
+                                $has_deleted = true;
+                                ?>
                                 <tr>
-                                    <td>
-                                        <input type="checkbox" name="ids[]" value="<?php echo esc_attr( $c->id ); ?>">
-                                    </td>
-                                    <td><?php echo esc_html( $c->id ); ?></td>
                                     <td><?php echo esc_html( $c->customer_name ); ?></td>
                                     <td><?php echo esc_html( $c->customer_number ); ?></td>
+                                    <td><?php echo esc_html( $c->deleted_at ); ?></td>
                                     <td>
-                                        <!-- כפתור עריכה – JS ימלא את הטופס העליון -->
-                                        <button type="button"
-                                                class="dc-btn-secondary dc-edit-customer"
-                                                data-id="<?php echo esc_attr( $c->id ); ?>"
-                                                data-name="<?php echo esc_attr( $c->customer_name ); ?>"
-                                                data-number="<?php echo esc_attr( $c->customer_number ); ?>">
-                                            עריכה
-                                        </button>
-
-                                        <!-- מחיקה לסל מחזור -->
-                                        <form method="post" style="display:inline;">
+                                        <form method="post">
                                             <?php wp_nonce_field( 'dc_customers_action' ); ?>
-                                            <input type="hidden" name="dc_customers_action" value="soft_delete">
+                                            <input type="hidden" name="dc_customers_action" value="delete_permanent">
                                             <input type="hidden" name="id" value="<?php echo esc_attr( $c->id ); ?>">
-                                            <button type="submit" class="dc-btn-danger">מחיקה</button>
+                                            <button type="submit" class="dc-btn-danger">
+                                                <span class="dc-icon" aria-hidden="true">
+                                                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 6h14M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M9 11v6m4-6v6m-6-8h10l-.7 9.1a2 2 0 0 1-2 1.9H9.7a2 2 0 0 1-2-1.9L7 11Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                </span>
+                                                מחיקה לצמיתות
+                                            </button>
                                         </form>
                                     </td>
                                 </tr>
-                            <?php endforeach; ?>
-                        <?php else : ?>
+                                <?php
+                            endforeach;
+                        endif;
+
+                        if ( ! $has_deleted ) :
+                            ?>
                             <tr>
-                                <td colspan="5">לא נמצאו לקוחות.</td>
+                                <td colspan="4">סל המחזור ריק.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
 
-                <button type="submit" class="dc-btn-danger">
-                    מחיקת רשומות מסומנות (לסל מחזור)
-                </button>
-            </form>
-
-            <!-- סל מחזור -->
-            <h3>סל מחזור</h3>
-            <table class="dc-table-modern dc-trash-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>שם לקוח</th>
-                        <th>מספר לקוח</th>
-                        <th>נמחק בתאריך</th>
-                        <th>מחיקה לצמיתות</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
-                    $has_deleted = false;
-                    if ( $deleted_customers ) :
-                        foreach ( $deleted_customers as $c ) :
-                            if ( ! $c->is_deleted ) {
-                                continue;
-                            }
-                            $has_deleted = true;
-                            ?>
-                            <tr>
-                                <td><?php echo esc_html( $c->id ); ?></td>
-                                <td><?php echo esc_html( $c->customer_name ); ?></td>
-                                <td><?php echo esc_html( $c->customer_number ); ?></td>
-                                <td><?php echo esc_html( $c->deleted_at ); ?></td>
-                                <td>
-                                    <form method="post">
-                                        <?php wp_nonce_field( 'dc_customers_action' ); ?>
-                                        <input type="hidden" name="dc_customers_action" value="delete_permanent">
-                                        <input type="hidden" name="id" value="<?php echo esc_attr( $c->id ); ?>">
-                                        <button type="submit" class="dc-btn-danger">
-                                            מחיקה לצמיתות
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                            <?php
-                        endforeach;
-                    endif;
-
-                    if ( ! $has_deleted ) :
-                        ?>
-                        <tr>
-                            <td colspan="5">סל המחזור ריק.</td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-
-            <?php if ( $has_deleted ) : ?>
-                <form method="post">
-                    <?php wp_nonce_field( 'dc_customers_action' ); ?>
-                    <input type="hidden" name="dc_customers_action" value="delete_permanent_all">
-                    <button type="submit" class="dc-btn-danger">
-                        מחיקת כל סל המחזור לצמיתות
-                    </button>
-                </form>
+                <?php if ( $has_deleted ) : ?>
+                    <form method="post">
+                        <?php wp_nonce_field( 'dc_customers_action' ); ?>
+                        <input type="hidden" name="dc_customers_action" value="delete_permanent_all">
+                        <button type="submit" class="dc-btn-danger">
+                            <span class="dc-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 6h14M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M9 11v6m4-6v6m-6-8h10l-.7 9.1a2 2 0 0 1-2 1.9H9.7a2 2 0 0 1-2-1.9L7 11Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            מחיקת כל סל המחזור לצמיתות
+                        </button>
+                    </form>
+                <?php endif; ?>
             <?php endif; ?>
 
+            <div class="dc-import-export">
+                <form method="post" class="dc-icon-only">
+                    <?php wp_nonce_field( 'dc_customers_action' ); ?>
+                    <input type="hidden" name="dc_customers_action" value="export_csv">
+                    <button type="submit" class="dc-btn-secondary">
+                        <span class="dc-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 16v-9m0 9-3-3m3 3 3-3M6 18h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </span>
+                        ייצוא ל-Excel (CSV)
+                    </button>
+                </form>
+
+                <form method="post" enctype="multipart/form-data" class="dc-icon-only">
+                    <?php wp_nonce_field( 'dc_customers_action' ); ?>
+                    <input type="hidden" name="dc_customers_action" value="import_csv">
+                    <input type="file" name="customers_file" accept=".csv" required>
+                    <button type="submit" class="dc-btn-secondary">
+                        <span class="dc-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8v9m0-9-3 3m3-3 3 3M6 6h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </span>
+                        ייבוא מ-Excel (CSV)
+                    </button>
+                </form>
+            </div>
         </div>
         <?php
         return ob_get_clean();
