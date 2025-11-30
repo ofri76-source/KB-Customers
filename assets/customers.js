@@ -1,14 +1,4 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // בחירת כל הלקוחות
-    const selectAll = document.querySelector('.dc-select-all');
-    if (selectAll) {
-        selectAll.addEventListener('change', function (e) {
-            document.querySelectorAll('input[name="ids[]"]').forEach(function (cb) {
-                cb.checked = e.target.checked;
-            });
-        });
-    }
-
     // מילוי טופס העריכה העליון
     document.querySelectorAll('.dc-edit-customer').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -22,4 +12,26 @@ document.addEventListener('DOMContentLoaded', function () {
             form.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     });
+
+    // חיפוש אוטומטי בעת הקלדה + כפתור נקה
+    const searchForm = document.querySelector('.dc-search-form');
+    const searchInput = searchForm ? searchForm.querySelector('input[name="dc_c_search"]') : null;
+    let searchTimer;
+
+    if (searchForm && searchInput) {
+        searchInput.addEventListener('input', function () {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(function () {
+                searchForm.submit();
+            }, 300);
+        });
+
+        const clearBtn = searchForm.querySelector('.dc-search-clear');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function () {
+                searchInput.value = '';
+                window.location.href = this.dataset.target || window.location.href.split('?')[0];
+            });
+        }
+    }
 });

@@ -484,9 +484,21 @@ class DC_Customers_Manager {
         $errors = get_transient( 'dc_customers_errors' );
         delete_transient( 'dc_customers_errors' );
 
-        $base_url    = remove_query_arg( array( 'dc_c_view', 'dc_c_orderby', 'dc_c_order' ) );
-        $manager_url = add_query_arg( 'dc_c_view', 'customers', $base_url );
-        $trash_url   = add_query_arg( 'dc_c_view', 'trash', $base_url );
+        // כתובות ייעודיות לצפייה ב"ניהול לקוחות" וב"סל מחזור"
+        $manager_page_id = 14269;
+        $trash_page_id   = 14273;
+
+        $manager_url = get_permalink( $manager_page_id );
+        if ( ! $manager_url ) {
+            $manager_url = add_query_arg( 'page_id', $manager_page_id, home_url( '/' ) );
+        }
+
+        $trash_url = get_permalink( $trash_page_id );
+        if ( ! $trash_url ) {
+            $trash_url = add_query_arg( 'page_id', $trash_page_id, home_url( '/' ) );
+        }
+
+        $search_action = $view === 'trash' ? $trash_url : $manager_url;
 
         ob_start();
         ?>
@@ -497,12 +509,6 @@ class DC_Customers_Manager {
                         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                     </span>
                     ניהול לקוחות
-                </a>
-                <a class="dc-nav-button" href="<?php echo esc_url( $manager_url . '#bulk-actions' ); ?>">
-                    <span class="dc-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 7h14M5 12h10M5 17h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                    </span>
-                    עריכה קבוצתית
                 </a>
                 <a class="dc-nav-button <?php echo $view === 'trash' ? 'is-active' : ''; ?>" href="<?php echo esc_url( $trash_url ); ?>">
                     <span class="dc-icon" aria-hidden="true">
@@ -520,7 +526,7 @@ class DC_Customers_Manager {
                 </div>
             <?php endif; ?>
 
-            <form method="get" class="dc-search-form">
+            <form method="get" class="dc-search-form" action="<?php echo esc_url( $search_action ); ?>">
                 <input type="text"
                        name="dc_c_search"
                        value="<?php echo esc_attr( $search ); ?>"
@@ -530,6 +536,12 @@ class DC_Customers_Manager {
                         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m15 15 4 4m-7-3a5 5 0 1 1 0-10 5 5 0 0 1 0 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </span>
                     חיפוש
+                </button>
+                <button type="button" class="dc-btn-secondary dc-search-clear" data-target="<?php echo esc_url( $search_action ); ?>">
+                    <span class="dc-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m6 6 12 12M6 18 18 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    </span>
+                    נקה
                 </button>
             </form>
 
@@ -561,79 +573,81 @@ class DC_Customers_Manager {
                 </form>
 
                 <h3>רשימת לקוחות</h3>
-                <form method="post">
-                    <?php wp_nonce_field( 'dc_customers_action' ); ?>
-                    <input type="hidden" name="dc_customers_action" value="soft_delete_bulk">
-
-                    <table class="dc-table-modern">
-                        <thead>
-                            <tr>
-                                <th><input type="checkbox" class="dc-select-all"></th>
-                                <th>
-                                    <a href="?dc_c_orderby=customer_name&dc_c_order=<?php echo $order === 'ASC' ? 'DESC' : 'ASC'; ?>">
-                                        שם לקוח
-                                    </a>
-                                </th>
-                                <th>
-                                    <a href="?dc_c_orderby=customer_number&dc_c_order=<?php echo $order === 'ASC' ? 'DESC' : 'ASC'; ?>">
-                                        מספר לקוח
-                                    </a>
-                                </th>
-                                <th>פעולות</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if ( $customers ) : ?>
-                                <?php foreach ( $customers as $c ) : ?>
-                                    <tr>
-                                        <td>
-                                            <input type="checkbox" name="ids[]" value="<?php echo esc_attr( $c->id ); ?>">
-                                        </td>
-                                        <td><?php echo esc_html( $c->customer_name ); ?></td>
-                                        <td><?php echo esc_html( $c->customer_number ); ?></td>
-                                        <td>
-                                            <button type="button"
-                                                    class="dc-btn-secondary dc-edit-customer"
-                                                    data-id="<?php echo esc_attr( $c->id ); ?>"
-                                                    data-name="<?php echo esc_attr( $c->customer_name ); ?>"
-                                                    data-number="<?php echo esc_attr( $c->customer_number ); ?>">
-                                                <span class="dc-icon" aria-hidden="true">
-                                                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m5 17 4.5-.8 9-9a1 1 0 0 0-1.4-1.4l-9 9L5 17Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 6 18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                                </span>
-                                                עריכה
-                                            </button>
-
-                                            <form method="post" style="display:inline;">
-                                                <?php wp_nonce_field( 'dc_customers_action' ); ?>
-                                                <input type="hidden" name="dc_customers_action" value="soft_delete">
-                                                <input type="hidden" name="id" value="<?php echo esc_attr( $c->id ); ?>">
-                                                <button type="submit" class="dc-btn-danger">
-                                                    <span class="dc-icon" aria-hidden="true">
-                                                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9 6h6m-7 3h8l-.7 9.1a2 2 0 0 1-2 1.9H10a2 2 0 0 1-2-1.9L7.3 9M10 11v6m4-6v6M5 6h14M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                                    </span>
-                                                    מחיקה
-                                                </button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php else : ?>
+                <table class="dc-table-modern">
+                    <thead>
+                        <tr>
+                            <th>
+                                <a href="<?php echo esc_url( add_query_arg( array(
+                                    'dc_c_orderby' => 'customer_name',
+                                    'dc_c_order'   => $order === 'ASC' ? 'DESC' : 'ASC',
+                                    'dc_c_search'  => $search,
+                                ), $search_action ) ); ?>">
+                                    שם לקוח
+                                </a>
+                            </th>
+                            <th>
+                                <a href="<?php echo esc_url( add_query_arg( array(
+                                    'dc_c_orderby' => 'customer_number',
+                                    'dc_c_order'   => $order === 'ASC' ? 'DESC' : 'ASC',
+                                    'dc_c_search'  => $search,
+                                ), $search_action ) ); ?>">
+                                    מספר לקוח
+                                </a>
+                            </th>
+                            <th>פעולות</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $has_deleted = false;
+                        if ( $deleted_customers ) :
+                            foreach ( $deleted_customers as $c ) :
+                                if ( ! $c->is_deleted ) {
+                                    continue;
+                                }
+                                $has_deleted = true;
+                                ?>
                                 <tr>
-                                    <td colspan="4">לא נמצאו לקוחות.</td>
-                                </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                                    <td><?php echo esc_html( $c->customer_name ); ?></td>
+                                    <td><?php echo esc_html( $c->customer_number ); ?></td>
+                                    <td><?php echo esc_html( $c->deleted_at ); ?></td>
+                                    <td>
+                                        <button type="button"
+                                                class="dc-btn-secondary dc-edit-customer"
+                                                data-id="<?php echo esc_attr( $c->id ); ?>"
+                                                data-name="<?php echo esc_attr( $c->customer_name ); ?>"
+                                                data-number="<?php echo esc_attr( $c->customer_number ); ?>">
+                                            <span class="dc-icon" aria-hidden="true">
+                                                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m5 17 4.5-.8 9-9a1 1 0 0 0-1.4-1.4l-9 9L5 17Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 6 18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                            </span>
+                                            עריכה
+                                        </button>
 
-                    <div id="bulk-actions">
-                        <button type="submit" class="dc-btn-danger">
-                            <span class="dc-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 6h14M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M9 11v6m4-6v6m-6-8h10l-.7 9.1a2 2 0 0 1-2 1.9H9.7a2 2 0 0 1-2-1.9L7 11Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            </span>
-                            מחיקת רשומות מסומנות (לסל מחזור)
-                        </button>
-                    </div>
-                </form>
+                                        <form method="post" style="display:inline;">
+                                            <?php wp_nonce_field( 'dc_customers_action' ); ?>
+                                            <input type="hidden" name="dc_customers_action" value="delete_permanent">
+                                            <input type="hidden" name="id" value="<?php echo esc_attr( $c->id ); ?>">
+                                            <button type="submit" class="dc-btn-danger">
+                                                <span class="dc-icon" aria-hidden="true">
+                                                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9 6h6m-7 3h8l-.7 9.1a2 2 0 0 1-2 1.9H10a2 2 0 0 1-2-1.9L7.3 9M10 11v6m4-6v6M5 6h14M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                </span>
+                                                מחיקה
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                <?php
+                            endforeach;
+                        endif;
+
+                        if ( ! $has_deleted ) :
+                            ?>
+                            <tr>
+                                <td colspan="3">לא נמצאו לקוחות.</td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
             <?php endif; ?>
 
             <?php if ( $view === 'trash' ) : ?>

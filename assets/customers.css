@@ -176,9 +176,10 @@
 
 .dc-table-modern th,
 .dc-table-modern td {
-    padding: 12px 10px;
+    padding: 6px 8px;
     text-align: right;
     border-bottom: 1px solid #e5e7eb;
+    line-height: 1.2;
 }
 
 .dc-table-modern tbody tr:nth-child(odd) {
@@ -206,11 +207,6 @@
     gap: 12px;
     flex-wrap: wrap;
     margin-top: 18px;
-}
-
-/* עוגן לפעולות מרובות */
-#bulk-actions {
-    margin-top: 16px;
 }
 
 /* סמלים קטנים */
