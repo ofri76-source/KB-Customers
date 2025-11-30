@@ -176,6 +176,13 @@
     }
 }
 
+.dc-form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+}
+
 /* כפתורים כלליים */
 .dc-btn-primary,
 .dc-btn-secondary,
