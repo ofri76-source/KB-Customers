@@ -1,0 +1,221 @@
+/* בסיס כללי */
+.dc-customers-wrap {
+    direction: rtl;
+    font-family: "Open Sans", Arial, sans-serif;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07);
+}
+
+.dc-customers-wrap h3 {
+    margin-top: 24px;
+    margin-bottom: 12px;
+    color: #1f2937;
+}
+
+.dc-errors {
+    background: #fde2e1;
+    color: #7f1d1d;
+    border: 1px solid #fecdd3;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+}
+
+/* ניווט עליון */
+.dc-nav-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+}
+
+.dc-nav-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1px solid #d7d7d7;
+    background: #f8fafc;
+    color: #111827;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.dc-nav-button .dc-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+}
+
+.dc-nav-button:hover {
+    border-color: #1d4ed8;
+    color: #0f172a;
+}
+
+.dc-nav-button.is-active {
+    background: #1d4ed8;
+    color: #ffffff;
+    border-color: #1d4ed8;
+    box-shadow: 0 2px 8px rgba(29, 78, 216, 0.35);
+}
+
+.dc-nav-button.is-active .dc-icon svg {
+    fill: #ffffff;
+}
+
+/* טפסי חיפוש ושדות */
+.dc-search-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.dc-search-form input[type="text"] {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    background: #f9fafb;
+}
+
+.dc-form-modern {
+    display: grid;
+    gap: 14px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.dc-field label {
+    display: block;
+    margin-bottom: 6px;
+    color: #374151;
+    font-weight: 600;
+}
+
+.dc-field input[type="text"],
+.dc-field input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+}
+
+/* כפתורים כלליים */
+.dc-btn-primary,
+.dc-btn-secondary,
+.dc-btn-danger {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.dc-btn-primary {
+    background: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
+}
+
+.dc-btn-secondary {
+    background: #f3f4f6;
+    color: #111827;
+    border: 1px solid #e5e7eb;
+}
+
+.dc-btn-danger {
+    background: #ef4444;
+    color: #ffffff;
+    box-shadow: 0 3px 10px rgba(239, 68, 68, 0.25);
+}
+
+.dc-btn-primary:hover,
+.dc-btn-secondary:hover,
+.dc-btn-danger:hover {
+    transform: translateY(-1px);
+}
+
+.dc-btn-primary .dc-icon svg,
+.dc-btn-secondary .dc-icon svg,
+.dc-btn-danger .dc-icon svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+/* טבלאות */
+.dc-table-modern {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+}
+
+.dc-table-modern thead {
+    background: #f1f5f9;
+}
+
+.dc-table-modern th,
+.dc-table-modern td {
+    padding: 6px 8px;
+    text-align: right;
+    border-bottom: 1px solid #e5e7eb;
+    line-height: 1.2;
+}
+
+.dc-table-modern tbody tr:nth-child(odd) {
+    background: #f9fafb;
+}
+
+.dc-table-modern tbody tr:hover {
+    background: #eef2ff;
+}
+
+.dc-table-modern th a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.dc-table-modern th input[type="checkbox"],
+.dc-table-modern td input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+}
+
+/* קבצים וייבוא/ייצוא */
+.dc-import-export {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+}
+
+/* סמלים קטנים */
+.dc-icon-only {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dc-icon-only .dc-icon {
+    color: currentColor;
+}
