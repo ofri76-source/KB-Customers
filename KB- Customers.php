@@ -593,11 +593,19 @@ class DC_Customers_Manager {
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if ( $customers ) : ?>
-                            <?php foreach ( $customers as $c ) : ?>
+                        <?php
+                        $has_deleted = false;
+                        if ( $deleted_customers ) :
+                            foreach ( $deleted_customers as $c ) :
+                                if ( ! $c->is_deleted ) {
+                                    continue;
+                                }
+                                $has_deleted = true;
+                                ?>
                                 <tr>
                                     <td><?php echo esc_html( $c->customer_name ); ?></td>
                                     <td><?php echo esc_html( $c->customer_number ); ?></td>
+                                    <td><?php echo esc_html( $c->deleted_at ); ?></td>
                                     <td>
                                         <button type="button"
                                                 class="dc-btn-secondary dc-edit-customer"
@@ -612,7 +620,7 @@ class DC_Customers_Manager {
 
                                         <form method="post" style="display:inline;">
                                             <?php wp_nonce_field( 'dc_customers_action' ); ?>
-                                            <input type="hidden" name="dc_customers_action" value="soft_delete">
+                                            <input type="hidden" name="dc_customers_action" value="delete_permanent">
                                             <input type="hidden" name="id" value="<?php echo esc_attr( $c->id ); ?>">
                                             <button type="submit" class="dc-btn-danger">
                                                 <span class="dc-icon" aria-hidden="true">
@@ -623,8 +631,12 @@ class DC_Customers_Manager {
                                         </form>
                                     </td>
                                 </tr>
-                            <?php endforeach; ?>
-                        <?php else : ?>
+                                <?php
+                            endforeach;
+                        endif;
+
+                        if ( ! $has_deleted ) :
+                            ?>
                             <tr>
                                 <td colspan="3">לא נמצאו לקוחות.</td>
                             </tr>
