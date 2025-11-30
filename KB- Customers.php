@@ -488,15 +488,9 @@ class DC_Customers_Manager {
         $manager_page_id = 14269;
         $trash_page_id   = 14273;
 
-        $manager_url = get_permalink( $manager_page_id );
-        if ( ! $manager_url ) {
-            $manager_url = add_query_arg( 'page_id', $manager_page_id, home_url( '/' ) );
-        }
-
-        $trash_url = get_permalink( $trash_page_id );
-        if ( ! $trash_url ) {
-            $trash_url = add_query_arg( 'page_id', $trash_page_id, home_url( '/' ) );
-        }
+        // שימוש בקישורי page_id מפורשים כדי למנוע הפניות לדף הבית במעבר בין חיפוש/מיון
+        $manager_url = add_query_arg( 'page_id', $manager_page_id, home_url( '/' ) );
+        $trash_url   = add_query_arg( 'page_id', $trash_page_id, home_url( '/' ) );
 
         $search_action = $view === 'trash' ? $trash_url : $manager_url;
 
@@ -527,6 +521,7 @@ class DC_Customers_Manager {
             <?php endif; ?>
 
             <form method="get" class="dc-search-form" action="<?php echo esc_url( $search_action ); ?>">
+                <input type="hidden" name="page_id" value="<?php echo esc_attr( $view === 'trash' ? $trash_page_id : $manager_page_id ); ?>">
                 <input type="text"
                        name="dc_c_search"
                        value="<?php echo esc_attr( $search ); ?>"
