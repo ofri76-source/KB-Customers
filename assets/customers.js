@@ -1,9 +1,43 @@
 document.addEventListener('DOMContentLoaded', function () {
+    const formCard = document.querySelector('#dc-customer-form');
+    const form = document.querySelector('.dc-form-customer');
+
+    function openForm(reset = false) {
+        if (!formCard || !form) return;
+        formCard.classList.remove('is-collapsed');
+        if (reset) {
+            form.reset();
+            const hiddenId = form.querySelector('input[name="id"]');
+            if (hiddenId) {
+                hiddenId.value = '';
+            }
+        }
+        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function closeForm() {
+        if (!formCard) return;
+        formCard.classList.add('is-collapsed');
+    }
+
+    document.querySelectorAll('.dc-open-form').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            openForm(true);
+        });
+    });
+
+    document.querySelectorAll('.dc-collapse-form').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            closeForm();
+        });
+    });
+
     // מילוי טופס העריכה העליון
     document.querySelectorAll('.dc-edit-customer').forEach(function (btn) {
         btn.addEventListener('click', function () {
-            const form = document.querySelector('.dc-form-customer');
             if (!form) return;
+
+            openForm();
 
             form.querySelector('input[name="id"]').value = this.dataset.id || '';
             form.querySelector('input[name="customer_name"]').value = this.dataset.name || '';
